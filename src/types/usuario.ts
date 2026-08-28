@@ -2,7 +2,15 @@
  * Tipos relacionados a Usuários
  */
 
-export type TipoUsuario = "paciente" | "admin";
+export type TipoUsuario = "paciente" | "medico" | "admin";
+
+export type EspecialidadeUsuario =
+  | "Cardiologia"
+  | "Dermatologia"
+  | "Ortopedia"
+  | "Pediatria"
+  | "Psiquiatria"
+  | "Clínica Geral";
 
 export interface Usuario {
   id: number;
@@ -12,6 +20,10 @@ export interface Usuario {
   cpf: string;
   telefone: string;
   perfil: TipoUsuario;
+
+  /** Presente quando perfil === "medico" - liga o usuário às consultas */
+  medicoId?: number;
+  especialidade?: EspecialidadeUsuario;
 }
 
 // Credenciais fixas para admin (em produção seria em backend)

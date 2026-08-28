@@ -1,5 +1,9 @@
-export type Especialidade = {
+import { Especialidade } from "../types";
+
+export interface Medico {
   id: number;
   nome: string;
-  descricao?: string;
-};
+  crm: string;
+  especialidade: Especialidade;
+  ativo: boolean;
+}

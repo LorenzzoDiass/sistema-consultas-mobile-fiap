@@ -1,12 +1,21 @@
 /**
  * Consultas Service
  * Gerencia operações relacionadas a consultas com AsyncStorage
- * Filtra consultas baseado no usuário logado
+ * Filtra consultas baseado no perfil do usuário logado
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Consulta } from "../interfaces/consulta";
-import { StatusConsulta } from "../types/statusConsulta";
+
+/**
+ * Opções usadas para controlar o acesso às consultas
+ */
+export type OpcoesFiltroConsulta = {
+  usuarioId?: number;
+  isAdmin?: boolean;
+  isMedico?: boolean;
+  medicoId?: number;
+};
 
 class ConsultasService {
   /**
@@ -15,9 +24,13 @@ class ConsultasService {
   private async obterTodasConsultas(): Promise<Consulta[]> {
     try {
       const consultasJSON = await AsyncStorage.getItem("@consultas");
-      if (!consultasJSON) return [];
-      
-      const consultas = JSON.parse(consultasJSON);
+
+      if (!consultasJSON) {
+        return [];
+      }
+
+      const consultas: Consulta[] = JSON.parse(consultasJSON);
+
       return consultas;
     } catch (error) {
       console.error("Erro ao obter consultas:", error);
@@ -28,9 +41,14 @@ class ConsultasService {
   /**
    * Salva consultas no AsyncStorage
    */
-  private async salvarConsultas(consultas: Consulta[]): Promise<void> {
+  private async salvarConsultas(
+    consultas: Consulta[]
+  ): Promise<void> {
     try {
-      await AsyncStorage.setItem("@consultas", JSON.stringify(consultas));
+      await AsyncStorage.setItem(
+        "@consultas",
+        JSON.stringify(consultas)
+      );
     } catch (error) {
       console.error("Erro ao salvar consultas:", error);
       throw error;
@@ -38,188 +56,310 @@ class ConsultasService {
   }
 
   /**
-   * Lista consultas filtradas por usuário (pacientes veem só as suas, admin vê todas)
+   * Verifica se o usuário tem permissão para acessar
+   * determinada consulta
    */
-  async listarConsultas(usuarioId?: number, isAdmin: boolean = false): Promise<Consulta[]> {
+  private temPermissao(
+    consulta: Consulta,
+    opcoes: OpcoesFiltroConsulta
+  ): boolean {
+    // Admin pode acessar qualquer consulta
+    if (opcoes.isAdmin) {
+      return true;
+    }
+
+    // Médico pode acessar somente consultas atribuídas a ele
+    if (opcoes.isMedico && opcoes.medicoId) {
+      return consulta.medicoId === opcoes.medicoId;
+    }
+
+    // Paciente pode acessar somente as próprias consultas
+    if (opcoes.usuarioId) {
+      return consulta.usuarioId === opcoes.usuarioId;
+    }
+
+    return false;
+  }
+
+  /**
+   * Lista consultas de acordo com o perfil:
+   *
+   * Admin -> todas
+   * Médico -> consultas atribuídas ao medicoId
+   * Paciente -> consultas do usuarioId
+   */
+  async listarConsultas(
+    usuarioId?: number,
+    isAdmin: boolean = false,
+    isMedico: boolean = false,
+    medicoId?: number
+  ): Promise<Consulta[]> {
     const todasConsultas = await this.obterTodasConsultas();
-    
-    // Admin vê todas as consultas
+
+    // Admin vê tudo
     if (isAdmin) {
       return todasConsultas;
     }
-    
+
+    // Médico vê apenas a própria agenda
+    if (isMedico && medicoId) {
+      return todasConsultas.filter(
+        (consulta) => consulta.medicoId === medicoId
+      );
+    }
+
     // Paciente vê apenas suas consultas
     if (usuarioId) {
-      return todasConsultas.filter((c) => c.usuarioId === usuarioId);
+      return todasConsultas.filter(
+        (consulta) => consulta.usuarioId === usuarioId
+      );
     }
-    
+
     return [];
   }
 
   /**
    * Obtém uma consulta específica por ID
-   * Verifica se o usuário tem permissão para ver a consulta
    */
   async obterConsulta(
     id: number,
     usuarioId?: number,
-    isAdmin: boolean = false
+    isAdmin: boolean = false,
+    isMedico: boolean = false,
+    medicoId?: number
   ): Promise<Consulta> {
     const todasConsultas = await this.obterTodasConsultas();
-    const consulta = todasConsultas.find((c) => c.id === id);
-    
+
+    const consulta = todasConsultas.find(
+      (c) => c.id === id
+    );
+
     if (!consulta) {
       throw new Error("Consulta não encontrada");
     }
-    
-    // Verifica permissão
-    if (!isAdmin && consulta.usuarioId !== usuarioId) {
-      throw new Error("Você não tem permissão para visualizar esta consulta");
+
+    const permitido = this.temPermissao(consulta, {
+      usuarioId,
+      isAdmin,
+      isMedico,
+      medicoId,
+    });
+
+    if (!permitido) {
+      throw new Error(
+        "Você não tem permissão para visualizar esta consulta"
+      );
     }
-    
+
     return consulta;
   }
 
   /**
-   * Cria uma nova consulta associada ao usuário logado
+   * Cria uma nova consulta
+   *
+   * Mantém todos os campos recebidos, inclusive os campos
+   * da funcionalidade de pressão arterial/emergência.
    */
-  async criarConsulta(consultaData: Omit<Consulta, "id">): Promise<Consulta> {
+  async criarConsulta(
+    consultaData: Omit<Consulta, "id">
+  ): Promise<Consulta> {
     const todasConsultas = await this.obterTodasConsultas();
-    
+
     const novaConsulta: Consulta = {
       ...consultaData,
-      id: Date.now(), // Usa timestamp como ID
+      id: Date.now(),
     };
-    
+
     todasConsultas.push(novaConsulta);
+
     await this.salvarConsultas(todasConsultas);
-    
+
     return novaConsulta;
   }
 
   /**
-   * Atualiza o status de uma consulta para "confirmada"
+   * Atualiza o status para "confirmada"
    */
   async confirmarConsulta(
     id: number,
     usuarioId?: number,
-    isAdmin: boolean = false
+    isAdmin: boolean = false,
+    isMedico: boolean = false,
+    medicoId?: number
   ): Promise<Consulta> {
     const todasConsultas = await this.obterTodasConsultas();
-    const index = todasConsultas.findIndex((c) => c.id === id);
-    
+
+    const index = todasConsultas.findIndex(
+      (c) => c.id === id
+    );
+
     if (index === -1) {
       throw new Error("Consulta não encontrada");
     }
-    
-    // Verifica permissão
-    if (!isAdmin && todasConsultas[index].usuarioId !== usuarioId) {
-      throw new Error("Você não tem permissão para modificar esta consulta");
+
+    const consulta = todasConsultas[index];
+
+    const permitido = this.temPermissao(consulta, {
+      usuarioId,
+      isAdmin,
+      isMedico,
+      medicoId,
+    });
+
+    if (!permitido) {
+      throw new Error(
+        "Você não tem permissão para modificar esta consulta"
+      );
     }
-    
-    if (todasConsultas[index].status !== "agendada") {
-      throw new Error("Apenas consultas agendadas podem ser confirmadas");
+
+    if (consulta.status !== "agendada") {
+      throw new Error(
+        "Apenas consultas agendadas podem ser confirmadas"
+      );
     }
-    
+
     todasConsultas[index] = {
-      ...todasConsultas[index],
+      ...consulta,
       status: "confirmada",
     };
-    
+
     await this.salvarConsultas(todasConsultas);
+
     return todasConsultas[index];
   }
 
   /**
-   * Atualiza o status de uma consulta para "cancelada"
+   * Atualiza o status para "cancelada"
    */
   async cancelarConsulta(
     id: number,
     usuarioId?: number,
-    isAdmin: boolean = false
+    isAdmin: boolean = false,
+    isMedico: boolean = false,
+    medicoId?: number
   ): Promise<Consulta> {
     const todasConsultas = await this.obterTodasConsultas();
-    const index = todasConsultas.findIndex((c) => c.id === id);
-    
+
+    const index = todasConsultas.findIndex(
+      (c) => c.id === id
+    );
+
     if (index === -1) {
       throw new Error("Consulta não encontrada");
     }
-    
-    // Verifica permissão
-    if (!isAdmin && todasConsultas[index].usuarioId !== usuarioId) {
-      throw new Error("Você não tem permissão para modificar esta consulta");
+
+    const consulta = todasConsultas[index];
+
+    const permitido = this.temPermissao(consulta, {
+      usuarioId,
+      isAdmin,
+      isMedico,
+      medicoId,
+    });
+
+    if (!permitido) {
+      throw new Error(
+        "Você não tem permissão para modificar esta consulta"
+      );
     }
-    
+
     if (
-      todasConsultas[index].status !== "agendada" &&
-      todasConsultas[index].status !== "confirmada"
+      consulta.status !== "agendada" &&
+      consulta.status !== "confirmada"
     ) {
       throw new Error(
         "Apenas consultas agendadas ou confirmadas podem ser canceladas"
       );
     }
-    
+
     todasConsultas[index] = {
-      ...todasConsultas[index],
+      ...consulta,
       status: "cancelada",
     };
-    
+
     await this.salvarConsultas(todasConsultas);
+
     return todasConsultas[index];
   }
 
   /**
-   * Atualiza o status de uma consulta para "realizada" (apenas admin)
+   * Atualiza o status para "realizada"
+   * Apenas admin
    */
-  async realizarConsulta(id: number, isAdmin: boolean = false): Promise<Consulta> {
+  async realizarConsulta(
+    id: number,
+    isAdmin: boolean = false
+  ): Promise<Consulta> {
     if (!isAdmin) {
-      throw new Error("Apenas administradores podem marcar consultas como realizadas");
+      throw new Error(
+        "Apenas administradores podem marcar consultas como realizadas"
+      );
     }
 
     const todasConsultas = await this.obterTodasConsultas();
-    const index = todasConsultas.findIndex((c) => c.id === id);
-    
+
+    const index = todasConsultas.findIndex(
+      (c) => c.id === id
+    );
+
     if (index === -1) {
       throw new Error("Consulta não encontrada");
     }
-    
+
     if (todasConsultas[index].status !== "confirmada") {
-      throw new Error("Apenas consultas confirmadas podem ser realizadas");
+      throw new Error(
+        "Apenas consultas confirmadas podem ser realizadas"
+      );
     }
-    
+
     todasConsultas[index] = {
       ...todasConsultas[index],
       status: "realizada",
     };
-    
+
     await this.salvarConsultas(todasConsultas);
+
     return todasConsultas[index];
   }
 
   /**
-   * Deleta uma consulta (apenas admin)
+   * Deleta uma consulta
+   * Apenas admin
    */
-  async deletarConsulta(id: number, isAdmin: boolean = false): Promise<void> {
+  async deletarConsulta(
+    id: number,
+    isAdmin: boolean = false
+  ): Promise<void> {
     if (!isAdmin) {
-      throw new Error("Apenas administradores podem deletar consultas");
+      throw new Error(
+        "Apenas administradores podem deletar consultas"
+      );
     }
 
     const todasConsultas = await this.obterTodasConsultas();
-    const consultasFiltradas = todasConsultas.filter((c) => c.id !== id);
+
+    const consultasFiltradas = todasConsultas.filter(
+      (c) => c.id !== id
+    );
+
     await this.salvarConsultas(consultasFiltradas);
   }
 }
 
-// Consultas iniciais para teste (associadas aos usuários de teste)
+/**
+ * Consultas iniciais
+ *
+ * medicoId e medicoNome estão alinhados com medicosMock.
+ */
 const CONSULTAS_INICIAIS: Consulta[] = [
   {
     id: 1,
     pacienteId: 2,
     pacienteNome: "João Silva",
     medicoId: 1,
-    medicoNome: "Dr. Carlos Mendes",
+    medicoNome: "Dr. Roberto Silva",
     especialidade: "Cardiologia",
-    usuarioId: 2, // João Silva
+    usuarioId: 2,
     data: "2026-04-25",
     horario: "14:00",
     status: "agendada",
@@ -231,13 +371,13 @@ const CONSULTAS_INICIAIS: Consulta[] = [
     pacienteId: 2,
     pacienteNome: "João Silva",
     medicoId: 2,
-    medicoNome: "Dra. Ana Paula",
-    especialidade: "Ortopedia",
-    usuarioId: 2, // João Silva
+    medicoNome: "Dra. Maria Santos",
+    especialidade: "Dermatologia",
+    usuarioId: 2,
     data: "2026-04-28",
     horario: "10:30",
     status: "confirmada",
-    observacoes: "Dor no joelho",
+    observacoes: "Avaliação dermatológica",
     valor: 300,
   },
   {
@@ -245,13 +385,13 @@ const CONSULTAS_INICIAIS: Consulta[] = [
     pacienteId: 3,
     pacienteNome: "Maria Santos",
     medicoId: 3,
-    medicoNome: "Dr. Roberto Lima",
-    especialidade: "Dermatologia",
-    usuarioId: 3, // Maria Santos
+    medicoNome: "Dr. João Pereira",
+    especialidade: "Ortopedia",
+    usuarioId: 3,
     data: "2026-04-30",
     horario: "09:00",
     status: "agendada",
-    observacoes: "Manchas na pele",
+    observacoes: "Dor no joelho",
     valor: 200,
   },
   {
@@ -259,9 +399,9 @@ const CONSULTAS_INICIAIS: Consulta[] = [
     pacienteId: 3,
     pacienteNome: "Maria Santos",
     medicoId: 4,
-    medicoNome: "Dra. Juliana Costa",
+    medicoNome: "Dra. Ana Costa",
     especialidade: "Clínica Geral",
-    usuarioId: 3, // Maria Santos
+    usuarioId: 3,
     data: "2026-05-05",
     horario: "15:00",
     status: "confirmada",
@@ -273,13 +413,13 @@ const CONSULTAS_INICIAIS: Consulta[] = [
     pacienteId: 2,
     pacienteNome: "João Silva",
     medicoId: 5,
-    medicoNome: "Dr. Fernando Alves",
+    medicoNome: "Dr. Paulo Oliveira",
     especialidade: "Psiquiatria",
-    usuarioId: 2, // João Silva
+    usuarioId: 2,
     data: "2026-04-20",
     horario: "11:00",
     status: "realizada",
-    observacoes: "Dores de cabeça recorrentes",
+    observacoes: "Consulta de acompanhamento",
     valor: 350,
   },
 ];
@@ -289,14 +429,22 @@ const CONSULTAS_INICIAIS: Consulta[] = [
  */
 export async function inicializarConsultas(): Promise<void> {
   try {
-    const consultasExistentes = await AsyncStorage.getItem("@consultas");
-    
+    const consultasExistentes =
+      await AsyncStorage.getItem("@consultas");
+
     if (!consultasExistentes) {
-      await AsyncStorage.setItem("@consultas", JSON.stringify(CONSULTAS_INICIAIS));
+      await AsyncStorage.setItem(
+        "@consultas",
+        JSON.stringify(CONSULTAS_INICIAIS)
+      );
+
       console.log("✅ Consultas iniciais criadas");
     }
   } catch (error) {
-    console.error("❌ Erro ao inicializar consultas:", error);
+    console.error(
+      "❌ Erro ao inicializar consultas:",
+      error
+    );
   }
 }
 

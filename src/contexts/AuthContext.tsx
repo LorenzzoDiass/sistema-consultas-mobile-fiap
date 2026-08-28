@@ -13,6 +13,7 @@ type AuthContextData = {
   login: (email: string, senha: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
+  isMedico: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -21,7 +22,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log("🔄 AuthProvider renderizado - Usuario atual:", usuario?.nome || "nenhum");
+  console.log(
+    "🔄 AuthProvider renderizado - Usuario atual:",
+    usuario?.nome || "nenhum"
+  );
 
   // Carrega usuário salvo ao iniciar o app
   useEffect(() => {
@@ -30,17 +34,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Monitora mudanças no estado do usuario
   useEffect(() => {
-    console.log("🔔 Estado 'usuario' mudou:", usuario ? `${usuario.nome} (${usuario.perfil})` : "null");
+    console.log(
+      "🔔 Estado 'usuario' mudou:",
+      usuario ? `${usuario.nome} (${usuario.perfil})` : "null"
+    );
   }, [usuario]);
 
   async function carregarUsuario() {
     try {
       console.log("🔍 Verificando usuário salvo no AsyncStorage...");
+
       const usuarioSalvo = await AsyncStorage.getItem("@usuario");
+
       if (usuarioSalvo) {
         const usuarioParseado = JSON.parse(usuarioSalvo);
+
         setUsuario(usuarioParseado);
-        console.log("✅ Usuário carregado:", usuarioParseado.nome);
+
+        console.log(
+          "✅ Usuário carregado:",
+          usuarioParseado.nome
+        );
       } else {
         console.log("ℹ️ Nenhum usuário salvo encontrado");
       }
@@ -51,14 +65,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function login(email: string, senha: string): Promise<boolean> {
+  async function login(
+    email: string,
+    senha: string
+  ): Promise<boolean> {
     try {
       console.log("🔑 Tentando login com email:", email);
-      
+
       // Busca usuários cadastrados
-      const usuariosJSON = await AsyncStorage.getItem("@usuarios");
-      const usuarios: Usuario[] = usuariosJSON ? JSON.parse(usuariosJSON) : [];
-      console.log(`📋 ${usuarios.length} usuários encontrados no sistema`);
+      const usuariosJSON =
+        await AsyncStorage.getItem("@usuarios");
+
+      const usuarios: Usuario[] = usuariosJSON
+        ? JSON.parse(usuariosJSON)
+        : [];
+
+      console.log(
+        `📋 ${usuarios.length} usuários encontrados no sistema`
+      );
 
       // Busca usuário por email e senha
       const usuarioEncontrado = usuarios.find(
@@ -66,19 +90,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (usuarioEncontrado) {
-        console.log("✅ Credenciais válidas para:", usuarioEncontrado.nome);
-        
-        // Remove senha antes de salvar no contexto (segurança)
-        const { senha: _, ...usuarioSemSenha } = usuarioEncontrado;
-        const usuarioParaSalvar = usuarioSemSenha as Usuario;
+        console.log(
+          "✅ Credenciais válidas para:",
+          usuarioEncontrado.nome
+        );
 
-        // Salva no AsyncStorage PRIMEIRO
-        await AsyncStorage.setItem("@usuario", JSON.stringify(usuarioParaSalvar));
+        // Remove senha antes de salvar no contexto
+        const { senha: _, ...usuarioSemSenha } =
+          usuarioEncontrado;
+
+        const usuarioParaSalvar =
+          usuarioSemSenha as Usuario;
+
+        // Salva no AsyncStorage
+        await AsyncStorage.setItem(
+          "@usuario",
+          JSON.stringify(usuarioParaSalvar)
+        );
+
         console.log("💾 Usuário salvo no AsyncStorage");
-        
+
         // Atualiza estado do contexto
         setUsuario(usuarioParaSalvar);
+
         console.log("🎯 Login concluído com sucesso!");
+
         return true;
       }
 
@@ -93,49 +129,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function logout() {
     try {
       console.log("🚪 Iniciando logout...");
-      console.log("🔍 Usuário atual antes do logout:", usuario?.nome, usuario?.perfil);
-      
-      // 1. Verifica se existe antes de remover
-      const usuarioAntes = await AsyncStorage.getItem("@usuario");
-      console.log("📦 @usuario ANTES da remoção:", usuarioAntes ? "EXISTE" : "NÃO EXISTE");
-      
-      // 2. Remove do AsyncStorage - MÚLTIPLAS TENTATIVAS
-      console.log("🗑️ Removendo @usuario do AsyncStorage...");
+
+      console.log(
+        "🔍 Usuário atual antes do logout:",
+        usuario?.nome,
+        usuario?.perfil
+      );
+
+      const usuarioAntes =
+        await AsyncStorage.getItem("@usuario");
+
+      console.log(
+        "📦 @usuario ANTES da remoção:",
+        usuarioAntes ? "EXISTE" : "NÃO EXISTE"
+      );
+
+      console.log(
+        "🗑️ Removendo @usuario do AsyncStorage..."
+      );
+
       await AsyncStorage.removeItem("@usuario");
-      
-      // 3. Aguarda um pouco para garantir que foi removido
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // 4. VERIFICA se realmente foi removido
-      const usuarioDepois = await AsyncStorage.getItem("@usuario");
-      console.log("📦 @usuario DEPOIS da remoção:", usuarioDepois ? "⚠️ AINDA EXISTE!" : "✅ REMOVIDO");
-      
-      // 5. Se ainda existe, tenta remover novamente com força
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 100)
+      );
+
+      const usuarioDepois =
+        await AsyncStorage.getItem("@usuario");
+
+      console.log(
+        "📦 @usuario DEPOIS da remoção:",
+        usuarioDepois ? "⚠️ AINDA EXISTE!" : "✅ REMOVIDO"
+      );
+
       if (usuarioDepois) {
-        console.log("⚠️ TENTANDO REMOVER NOVAMENTE...");
+        console.log(
+          "⚠️ TENTANDO REMOVER NOVAMENTE..."
+        );
+
         await AsyncStorage.removeItem("@usuario");
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const verificacaoFinal = await AsyncStorage.getItem("@usuario");
-        console.log("📦 Verificação FINAL:", verificacaoFinal ? "❌ FALHOU - AINDA EXISTE" : "✅ REMOVIDO");
-        
-        // Última tentativa: limpar TODAS as chaves (emergência)
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 100)
+        );
+
+        const verificacaoFinal =
+          await AsyncStorage.getItem("@usuario");
+
+        console.log(
+          "📦 Verificação FINAL:",
+          verificacaoFinal
+            ? "❌ FALHOU - AINDA EXISTE"
+            : "✅ REMOVIDO"
+        );
+
         if (verificacaoFinal) {
-          console.log("🚨 EMERGÊNCIA: Tentando AsyncStorage.clear()...");
-          const allKeys = await AsyncStorage.getAllKeys();
+          console.log(
+            "🚨 EMERGÊNCIA: Tentando AsyncStorage.clear()..."
+          );
+
+          const allKeys =
+            await AsyncStorage.getAllKeys();
+
           console.log("🔑 Todas as chaves:", allKeys);
-          await AsyncStorage.multiRemove(["@usuario"]);
+
+          await AsyncStorage.multiRemove([
+            "@usuario",
+          ]);
+
           console.log("✅ multiRemove executado");
         }
       }
-      
-      // 6. Limpa estado do contexto
+
       setUsuario(null);
-      console.log("✅ Estado do contexto limpo");
+
+      console.log(
+        "✅ Estado do contexto limpo"
+      );
+
       console.log("🎯 Logout concluído!");
     } catch (error) {
-      console.error("❌ Erro ao fazer logout:", error);
-      // Mesmo com erro, tenta limpar o estado
+      console.error(
+        "❌ Erro ao fazer logout:",
+        error
+      );
+
       setUsuario(null);
     }
   }
@@ -144,8 +222,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return usuario?.perfil === "admin";
   }
 
+  function isMedico(): boolean {
+    return usuario?.perfil === "medico";
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider
+      value={{
+        usuario,
+        loading,
+        login,
+        logout,
+        isAdmin,
+        isMedico,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -153,8 +244,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
+
   if (!context) {
-    throw new Error("useAuth deve ser usado dentro de AuthProvider");
+    throw new Error(
+      "useAuth deve ser usado dentro de AuthProvider"
+    );
   }
+
   return context;
 }

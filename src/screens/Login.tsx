@@ -16,10 +16,10 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../contexts/AuthContext";
-import { 
-  obterCredenciaisTeste, 
+import {
+  obterCredenciaisTeste,
   forcarLogoutCompleto,
-  limparTudoDoAsyncStorage 
+  limparTudoDoAsyncStorage,
 } from "../services/authService";
 
 type LoginProps = {
@@ -28,10 +28,13 @@ type LoginProps = {
 
 export default function Login({ navigation }: LoginProps) {
   const { login } = useAuth();
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mostrarCredenciais, setMostrarCredenciais] = useState(false);
+
+  const [mostrarCredenciais, setMostrarCredenciais] =
+    useState(false);
 
   async function handleLogin() {
     if (!email.trim() || !senha.trim()) {
@@ -40,21 +43,33 @@ export default function Login({ navigation }: LoginProps) {
     }
 
     setLoading(true);
+
     try {
-      const sucesso = await login(email.trim(), senha);
-      
+      const sucesso = await login(
+        email.trim(),
+        senha
+      );
+
       if (!sucesso) {
-        Alert.alert("Erro", "Email ou senha inválidos");
+        Alert.alert(
+          "Erro",
+          "Email ou senha inválidos"
+        );
       }
-      // Se login bem-sucedido, a navegação será feita pelo Navigation baseado no contexto
     } catch (error) {
-      Alert.alert("Erro", "Ocorreu um erro ao fazer login");
+      Alert.alert(
+        "Erro",
+        "Ocorreu um erro ao fazer login"
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  function preencherCredenciais(emailPreencher: string, senhaPreencher: string) {
+  function preencherCredenciais(
+    emailPreencher: string,
+    senhaPreencher: string
+  ) {
     setEmail(emailPreencher);
     setSenha(senhaPreencher);
     setMostrarCredenciais(false);
@@ -62,16 +77,33 @@ export default function Login({ navigation }: LoginProps) {
 
   async function handleForcarLogout() {
     try {
-      console.log("🔧 DEBUG: Forçando logout completo...");
+      console.log(
+        "🔧 DEBUG: Forçando logout completo..."
+      );
+
       await forcarLogoutCompleto();
+
       Alert.alert(
         "Debug",
         "Logout forçado! Verifique o console.",
-        [{ text: "OK", onPress: () => console.log("Debug concluído") }]
+        [
+          {
+            text: "OK",
+            onPress: () =>
+              console.log("Debug concluído"),
+          },
+        ]
       );
     } catch (error) {
-      console.error("Erro ao forçar logout:", error);
-      Alert.alert("Erro", "Não foi possível forçar logout");
+      console.error(
+        "Erro ao forçar logout:",
+        error
+      );
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível forçar logout"
+      );
     }
   }
 
@@ -80,22 +112,36 @@ export default function Login({ navigation }: LoginProps) {
       "⚠️ CUIDADO!",
       "Isso vai limpar TODOS os dados do AsyncStorage (usuários, consultas, tudo)!\n\nTem certeza?",
       [
-        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
         {
           text: "SIM, LIMPAR TUDO",
           style: "destructive",
           onPress: async () => {
             try {
-              console.log("🚨 LIMPANDO TUDO...");
+              console.log(
+                "🚨 LIMPANDO TUDO..."
+              );
+
               await limparTudoDoAsyncStorage();
+
               Alert.alert(
                 "✅ Concluído",
                 "AsyncStorage limpo! RECARREGUE O APP (R+R).",
                 [{ text: "OK" }]
               );
             } catch (error) {
-              console.error("Erro ao limpar:", error);
-              Alert.alert("Erro", "Não foi possível limpar");
+              console.error(
+                "Erro ao limpar:",
+                error
+              );
+
+              Alert.alert(
+                "Erro",
+                "Não foi possível limpar"
+              );
             }
           },
         },
@@ -106,13 +152,23 @@ export default function Login({ navigation }: LoginProps) {
   const credenciais = obterCredenciaisTeste();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       <StatusBar style="light" />
+
       <View style={styles.content}>
         <Text style={styles.icone}>🔑</Text>
-        <Text style={styles.titulo}>Sistema de Consultas</Text>
-        <Text style={styles.subtitulo}>Faça login para continuar</Text>
-        
+
+        <Text style={styles.titulo}>
+          Sistema de Consultas
+        </Text>
+
+        <Text style={styles.subtitulo}>
+          Faça login para continuar
+        </Text>
+
         <View style={styles.formContainer}>
           <TextInput
             style={styles.input}
@@ -136,79 +192,225 @@ export default function Login({ navigation }: LoginProps) {
           />
 
           <TouchableOpacity
-            style={[styles.botao, styles.botaoPrimario]}
+            style={[
+              styles.botao,
+              styles.botaoPrimario,
+            ]}
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#79059C" />
             ) : (
-              <Text style={styles.botaoTexto}>Entrar</Text>
+              <Text style={styles.botaoTexto}>
+                Entrar
+              </Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.botao, styles.botaoSecundario]}
-            onPress={() => navigation.navigate("CadastroPaciente")}
+            style={[
+              styles.botao,
+              styles.botaoSecundario,
+            ]}
+            onPress={() =>
+              navigation.navigate(
+                "CadastroPaciente"
+              )
+            }
             disabled={loading}
           >
-            <Text style={styles.botaoTextoSecundario}>Criar Conta</Text>
+            <Text
+              style={styles.botaoTextoSecundario}
+            >
+              Criar Conta
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Credenciais de Teste (apenas desenvolvimento) */}
+        {/* Credenciais de Teste */}
         <View style={styles.credenciaisContainer}>
           <TouchableOpacity
-            onPress={() => setMostrarCredenciais(!mostrarCredenciais)}
+            onPress={() =>
+              setMostrarCredenciais(
+                !mostrarCredenciais
+              )
+            }
           >
-            <Text style={styles.credenciaisTitulo}>
-              📋 {mostrarCredenciais ? "Ocultar" : "Ver"} Credenciais de Teste
+            <Text
+              style={styles.credenciaisTitulo}
+            >
+              📋{" "}
+              {mostrarCredenciais
+                ? "Ocultar"
+                : "Ver"}{" "}
+              Credenciais de Teste
             </Text>
           </TouchableOpacity>
 
           {mostrarCredenciais && (
             <View style={styles.credenciaisLista}>
+              {/* ADMIN */}
+              <Text style={styles.categoriaTitulo}>
+                ADMINISTRADOR
+              </Text>
+
               <TouchableOpacity
                 style={styles.credencialItem}
-                onPress={() => preencherCredenciais(
-                  credenciais.admin.email,
-                  credenciais.admin.senha
-                )}
+                onPress={() =>
+                  preencherCredenciais(
+                    credenciais.admin.email,
+                    credenciais.admin.senha
+                  )
+                }
               >
-                <Text style={styles.credencialTipo}>👨‍💼 ADMIN</Text>
-                <Text style={styles.credencialTexto}>{credenciais.admin.email}</Text>
-                <Text style={styles.credencialTexto}>{credenciais.admin.senha}</Text>
+                <Text
+                  style={styles.credencialTipo}
+                >
+                  👨‍💼 ADMIN
+                </Text>
+
+                <Text
+                  style={styles.credencialTexto}
+                >
+                  {credenciais.admin.email}
+                </Text>
+
+                <Text
+                  style={styles.credencialTexto}
+                >
+                  Senha:{" "}
+                  {credenciais.admin.senha}
+                </Text>
               </TouchableOpacity>
 
-              {credenciais.pacientes.map((paciente, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.credencialItem}
-                  onPress={() => preencherCredenciais(paciente.email, paciente.senha)}
-                >
-                  <Text style={styles.credencialTipo}>👤 {paciente.nome}</Text>
-                  <Text style={styles.credencialTexto}>{paciente.email}</Text>
-                  <Text style={styles.credencialTexto}>{paciente.senha}</Text>
-                </TouchableOpacity>
-              ))}
+              {/* PACIENTES */}
+              <Text style={styles.categoriaTitulo}>
+                PACIENTES
+              </Text>
+
+              {credenciais.pacientes.map(
+                (paciente, index) => (
+                  <TouchableOpacity
+                    key={`paciente-${index}`}
+                    style={styles.credencialItem}
+                    onPress={() =>
+                      preencherCredenciais(
+                        paciente.email,
+                        paciente.senha
+                      )
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.credencialTipo
+                      }
+                    >
+                      👤 {paciente.nome}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.credencialTexto
+                      }
+                    >
+                      {paciente.email}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.credencialTexto
+                      }
+                    >
+                      Senha: {paciente.senha}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              )}
+
+              {/* MÉDICOS */}
+              <Text style={styles.categoriaTitulo}>
+                MÉDICOS
+              </Text>
+
+              {credenciais.medicos.map(
+                (medico, index) => (
+                  <TouchableOpacity
+                    key={`medico-${index}`}
+                    style={[
+                      styles.credencialItem,
+                      styles.credencialMedico,
+                    ]}
+                    onPress={() =>
+                      preencherCredenciais(
+                        medico.email,
+                        medico.senha
+                      )
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.credencialTipo
+                      }
+                    >
+                      🩺 {medico.nome}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.especialidadeMedico
+                      }
+                    >
+                      {medico.especialidade}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.credencialTexto
+                      }
+                    >
+                      {medico.email}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.credencialTexto
+                      }
+                    >
+                      Senha: {medico.senha}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              )}
             </View>
           )}
 
-          {/* Botão de Debug - Forçar Logout */}
+          {/* DEBUG */}
           {mostrarCredenciais && (
             <>
               <TouchableOpacity
                 style={styles.botaoDebug}
                 onPress={handleForcarLogout}
               >
-                <Text style={styles.botaoDebugTexto}>🔧 DEBUG: Forçar Logout Completo</Text>
+                <Text
+                  style={styles.botaoDebugTexto}
+                >
+                  🔧 DEBUG: Forçar Logout Completo
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.botaoDebugPerigoso}
+                style={
+                  styles.botaoDebugPerigoso
+                }
                 onPress={handleLimparTudo}
               >
-                <Text style={styles.botaoDebugTexto}>🚨 EMERGÊNCIA: Limpar TUDO do AsyncStorage</Text>
+                <Text
+                  style={styles.botaoDebugTexto}
+                >
+                  🚨 EMERGÊNCIA: Limpar TUDO do
+                  AsyncStorage
+                </Text>
               </TouchableOpacity>
             </>
           )}
@@ -223,35 +425,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#79059C",
   },
+
   scrollContent: {
     flexGrow: 1,
   },
+
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 32,
   },
+
   icone: {
     fontSize: 80,
     marginBottom: 24,
   },
+
   titulo: {
     fontSize: 32,
     fontWeight: "bold",
     color: "#fff",
     marginBottom: 8,
+    textAlign: "center",
   },
+
   subtitulo: {
     fontSize: 16,
     color: "#fff",
     opacity: 0.9,
     marginBottom: 32,
   },
+
   formContainer: {
     width: "100%",
     gap: 16,
   },
+
   input: {
     backgroundColor: "#fff",
     paddingVertical: 16,
@@ -260,83 +470,124 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
+
   botao: {
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: "center",
   },
+
   botaoPrimario: {
     backgroundColor: "#fff",
     marginTop: 8,
   },
+
   botaoSecundario: {
     backgroundColor: "transparent",
     borderWidth: 2,
     borderColor: "#fff",
   },
+
   botaoTexto: {
     color: "#79059C",
     fontWeight: "bold",
     fontSize: 16,
   },
+
   botaoTextoSecundario: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
+
   credenciaisContainer: {
     marginTop: 32,
     width: "100%",
   },
+
   credenciaisTitulo: {
     color: "#fff",
     fontSize: 14,
     textAlign: "center",
     opacity: 0.8,
   },
+
   credenciaisLista: {
     marginTop: 16,
     gap: 12,
   },
+
+  categoriaTitulo: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "bold",
+    marginTop: 10,
+    opacity: 0.8,
+  },
+
   credencialItem: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor:
+      "rgba(255, 255, 255, 0.15)",
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderColor:
+      "rgba(255, 255, 255, 0.3)",
   },
+
+  credencialMedico: {
+    borderColor:
+      "rgba(255, 255, 255, 0.5)",
+  },
+
   credencialTipo: {
     color: "#fff",
     fontWeight: "bold",
     marginBottom: 4,
   },
+
+  especialidadeMedico: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    opacity: 0.9,
+    marginBottom: 4,
+  },
+
   credencialTexto: {
     color: "#fff",
     fontSize: 12,
     opacity: 0.9,
   },
+
   botaoDebug: {
     marginTop: 16,
-    backgroundColor: "rgba(255, 0, 0, 0.3)",
+    backgroundColor:
+      "rgba(255, 0, 0, 0.3)",
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 0, 0, 0.5)",
+    borderColor:
+      "rgba(255, 0, 0, 0.5)",
     alignItems: "center",
   },
+
   botaoDebugPerigoso: {
     marginTop: 12,
-    backgroundColor: "rgba(139, 0, 0, 0.6)",
+    backgroundColor:
+      "rgba(139, 0, 0, 0.6)",
     padding: 12,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: "#ff0000",
     alignItems: "center",
   },
+
   botaoDebugTexto: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "bold",
+    textAlign: "center",
   },
 });
