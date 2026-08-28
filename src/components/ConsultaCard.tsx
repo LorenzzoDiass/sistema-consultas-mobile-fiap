@@ -6,7 +6,12 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Consulta } from "../types";
-import { formatarData, formatarHorario, obterCorStatus, obterTextoStatus } from "../utils/formatters";
+import {
+  formatarData,
+  formatarHorario,
+  obterCorStatus,
+  obterTextoStatus,
+} from "../utils/formatters";
 
 type ConsultaCardProps = {
   consulta: Consulta;
@@ -22,9 +27,22 @@ export default function ConsultaCard({
   onDetalhes,
 }: ConsultaCardProps) {
   const corStatus = obterCorStatus(consulta.status);
+  const ehPrioritaria = consulta.prioridade || consulta.emergencia;
 
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        ehPrioritaria && styles.cardPrioritario,
+      ]}
+    >
+      {/* Badge de Prioridade */}
+      {ehPrioritaria && (
+        <View style={styles.prioridadeBadge}>
+          <Text style={styles.prioridadeTexto}>🚨 PRIORITÁRIA</Text>
+        </View>
+      )}
+
       {/* Cabeçalho com Status */}
       <View style={[styles.statusBadge, { backgroundColor: corStatus }]}>
         <Text style={styles.statusTexto}>
@@ -53,6 +71,7 @@ export default function ConsultaCard({
           <Text style={styles.label}>Data:</Text>
           <Text style={styles.valor}>{formatarData(consulta.data)}</Text>
         </View>
+
         <View style={[styles.info, { flex: 1 }]}>
           <Text style={styles.label}>Horário:</Text>
           <Text style={styles.valor}>{formatarHorario(consulta.horario)}</Text>
@@ -77,7 +96,8 @@ export default function ConsultaCard({
           </TouchableOpacity>
         )}
 
-        {(consulta.status === "agendada" || consulta.status === "confirmada") &&
+        {(consulta.status === "agendada" ||
+          consulta.status === "confirmada") &&
           onCancelar && (
             <TouchableOpacity
               style={[styles.botao, styles.botaoCancelar]}
@@ -110,6 +130,27 @@ const styles = StyleSheet.create({
     boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
     elevation: 3,
   },
+
+  cardPrioritario: {
+    borderWidth: 3,
+    borderColor: "#B71C1C",
+  },
+
+  prioridadeBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#B71C1C",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+
+  prioridadeTexto: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
+
   statusBadge: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
@@ -117,40 +158,48 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
   },
+
   statusTexto: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 12,
     textTransform: "uppercase",
   },
+
   info: {
     marginBottom: 8,
   },
+
   row: {
     flexDirection: "row",
     gap: 12,
   },
+
   label: {
     fontSize: 12,
     color: "#666",
     marginBottom: 2,
   },
+
   valor: {
     fontSize: 16,
     color: "#333",
     fontWeight: "600",
   },
+
   valorSecundario: {
     fontSize: 14,
     color: "#555",
     fontStyle: "italic",
   },
+
   acoes: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
     marginTop: 12,
   },
+
   botao: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -158,22 +207,27 @@ const styles = StyleSheet.create({
     minWidth: 100,
     alignItems: "center",
   },
+
   botaoConfirmar: {
     backgroundColor: "#4CAF50",
   },
+
   botaoCancelar: {
     backgroundColor: "#F44336",
   },
+
   botaoDetalhes: {
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#79059C",
   },
+
   botaoTexto: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 14,
   },
+
   botaoTextoSecundario: {
     color: "#79059C",
     fontWeight: "bold",

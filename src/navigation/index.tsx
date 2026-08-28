@@ -19,6 +19,7 @@ import {
   MinhasConsultasScreen,
   AdminScreen,
   AgendamentoScreen,
+  PressaoArterialScreen,
 } from "../screens";
 
 // Tipagem das rotas (boas práticas de TypeScript)
@@ -32,6 +33,7 @@ export type RootStackParamList = {
   MinhasConsultas: undefined;
   Admin: undefined;
   Agendamento: undefined;
+  PressaoArterial: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,9 +45,15 @@ export default function Navigation() {
   useEffect(() => {
     if (!loading) {
       if (usuario) {
-        console.log("🔐 Navigation: Usuário logado ->", usuario.nome, `(${usuario.perfil})`);
+        console.log(
+          "🔐 Navigation: Usuário logado ->",
+          usuario.nome,
+          `(${usuario.perfil})`
+        );
       } else {
-        console.log("🔓 Navigation: Nenhum usuário logado - Mostrando tela de Login");
+        console.log(
+          "🔓 Navigation: Nenhum usuário logado - Mostrando tela de Login"
+        );
       }
     }
   }, [usuario, loading]);
@@ -71,19 +79,19 @@ export default function Navigation() {
           headerTitleStyle: {
             fontWeight: "bold",
           },
-          headerRight: () => (
+          headerRight: () =>
             usuario ? (
               <View style={styles.headerRight}>
                 <View style={styles.userBadge}>
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>
-                      {usuario.perfil === "admin" ? "👨‍💼" : "👤"} {usuario.nome}
+                      {usuario.perfil === "admin" ? "👨‍💼" : "👤"}{" "}
+                      {usuario.nome}
                     </Text>
                   </View>
                 </View>
               </View>
-            ) : null
-          ),
+            ) : null,
         }}
       >
         {!usuario ? (
@@ -181,6 +189,14 @@ export default function Navigation() {
               component={AgendamentoScreen}
               options={{
                 title: "Agendamento",
+              }}
+            />
+
+            <Stack.Screen
+              name="PressaoArterial"
+              component={PressaoArterialScreen}
+              options={{
+                title: "Pressão Arterial",
               }}
             />
           </>

@@ -24,7 +24,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   console.log("🏠 HomeScreen renderizado - Usuario:", usuario?.nome);
 
   async function handleLogout() {
-    console.log("� Iniciando logout...");
+    console.log("🚪 Iniciando logout...");
     try {
       await logout();
       console.log("✅ Logout concluído com sucesso");
@@ -76,6 +76,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <Text style={styles.cardTitulo}>Histórico</Text>
             <Text style={styles.cardDescricao}>
               Ver todas as suas consultas
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.card, styles.cardPressao]}
+            onPress={() => navigation.navigate("PressaoArterial")}
+          >
+            <Text style={styles.cardIcone}>🩺</Text>
+            <Text style={styles.cardTitulo}>Pressão Arterial</Text>
+            <Text style={styles.cardDescricao}>
+              Aferir PA e acionar emergência cardiológica se grave
             </Text>
           </TouchableOpacity>
         </View>
@@ -141,6 +152,9 @@ const styles = StyleSheet.create({
   },
   cardTerciario: {
     backgroundColor: "#FF9800",
+  },
+  cardPressao: {
+    backgroundColor: "#C62828",
   },
   cardIcone: {
     fontSize: 48,
